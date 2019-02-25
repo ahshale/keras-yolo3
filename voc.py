@@ -3,6 +3,8 @@ import os
 import xml.etree.ElementTree as ET
 import pickle
 
+resize_scale = 5
+
 def parse_voc_annotation(ann_dir, img_dir, cache_name, labels=[]):
     if os.path.exists(cache_name):
         with open(cache_name, 'rb') as handle:
@@ -49,13 +51,13 @@ def parse_voc_annotation(ann_dir, img_dir, cache_name, labels=[]):
                         if 'bndbox' in attr.tag:
                             for dim in list(attr):
                                 if 'xmin' in dim.tag:
-                                    obj['xmin'] = int(round(float(dim.text)))
+                                    obj['xmin'] = int(round(float(dim.text) / resize_scale))
                                 if 'ymin' in dim.tag:
-                                    obj['ymin'] = int(round(float(dim.text)))
+                                    obj['ymin'] = int(round(float(dim.text) / resize_scale))
                                 if 'xmax' in dim.tag:
-                                    obj['xmax'] = int(round(float(dim.text)))
+                                    obj['xmax'] = int(round(float(dim.text) / resize_scale))
                                 if 'ymax' in dim.tag:
-                                    obj['ymax'] = int(round(float(dim.text)))
+                                    obj['ymax'] = int(round(float(dim.text) / resize_scale))
 
             if len(img['object']) > 0:
                 all_insts += [img]

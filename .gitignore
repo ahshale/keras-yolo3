@@ -1,4 +1,20 @@
+# python
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# pkl file
+*.weights
+*.pkl
+
+# model weight
+*.h5
+
+# training logs
+logs/
+
+# inputs & result
+output/
 *.jpg
 *.jpeg
-*.weights
-*.h5
