@@ -159,6 +159,10 @@ def create_model(
         train_model = template_model      
 
     optimizer = Adam(lr=lr, clipnorm=0.001)
+    # def dummy_loss(y_true, y_pred): return tf.sqrt(tf.reduce_sum(y_pred))
+    # keras自定义损失函数需要输入两个参数，其中y_true为网络输入，y_pred为网络输出，
+    # 但YOLOv3在创建网络过程直接获得loss，此时网络输出y_pred即为loss，因此自定义损失
+    # 函数形式如上所示，看起来比较奇怪
     train_model.compile(loss=dummy_loss, optimizer=optimizer)             
 
     return train_model, infer_model
@@ -196,7 +200,7 @@ def _main_(args):
         min_net_size        = config['model']['min_input_size'],
         max_net_size        = config['model']['max_input_size'],   
         shuffle             = True, 
-        jitter              = 0.3, 
+        jitter              = 0.0, 
         norm                = normalize
     )
     

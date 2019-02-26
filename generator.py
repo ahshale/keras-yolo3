@@ -40,6 +40,7 @@ class BatchGenerator(Sequence):
 
     def __getitem__(self, idx):
         # get image input size, change every 10 batches
+        # 随机变化输入尺寸，输出尺寸随之相应改变
         net_h, net_w = self._get_net_size(idx)
         base_grid_h, base_grid_w = net_h//self.downsample, net_w//self.downsample
 
@@ -47,14 +48,15 @@ class BatchGenerator(Sequence):
         l_bound = idx*self.batch_size
         r_bound = (idx+1)*self.batch_size
 
+        # 保证每个batch中有batch_size个样本，避免出现由于遍历末尾样本不足导致的全零初始化
         if r_bound > len(self.instances):
             r_bound = len(self.instances)
             l_bound = r_bound - self.batch_size
 
+        # initialize the inputs and the outputs
         x_batch = np.zeros((r_bound - l_bound, net_h, net_w, 3))             # input images
         t_batch = np.zeros((r_bound - l_bound, 1, 1, 1,  self.max_box_per_image, 4))   # list of groundtruth boxes
 
-        # initialize the inputs and the outputs
         yolo_1 = np.zeros((r_bound - l_bound, 1*base_grid_h,  1*base_grid_w, len(self.anchors)//3, 4+1+len(self.labels))) # desired network output 1
         yolo_2 = np.zeros((r_bound - l_bound, 2*base_grid_h,  2*base_grid_w, len(self.anchors)//3, 4+1+len(self.labels))) # desired network output 2
         yolo_3 = np.zeros((r_bound - l_bound, 4*base_grid_h,  4*base_grid_w, len(self.anchors)//3, 4+1+len(self.labels))) # desired network output 3
@@ -164,13 +166,18 @@ class BatchGenerator(Sequence):
             
         image_h, image_w, _ = image.shape
         
-        # determine the amount of scaling and cropping
+        # determine the amount of scaling and cropping # 改变bbox
+        # 1. 由图片原始比例获得一个随机的适当比例；2. 随机缩放net_size，并按上述比例改变net_size为new_size；
+        # 3. 获得缩放与形变后net_size高宽方向偏移量；4. 将图片尺寸调整为new_size，此值与原net_size的相对大小不确定；
+        # 5. 将图片放置到net_size的画布右下方，若图片小了，则补值（127），若大了，取图片右下方
+        # 好复杂！！！！！而且放置位置似乎是固定的，不太可取
         dw = self.jitter * image_w;
         dh = self.jitter * image_h;
 
         new_ar = (image_w + np.random.uniform(-dw, dw)) / (image_h + np.random.uniform(-dh, dh));
         scale = np.random.uniform(0.25, 2);
 
+        # 对最大值进行缩放
         if (new_ar < 1):
             new_h = int(scale * net_h);
             new_w = int(net_h * new_ar);
@@ -181,13 +188,13 @@ class BatchGenerator(Sequence):
         dx = int(np.random.uniform(0, net_w - new_w));
         dy = int(np.random.uniform(0, net_h - new_h));
         
-        # apply scaling and cropping
+        # apply scaling and cropping # 改变bbox
         im_sized = apply_random_scale_and_crop(image, new_w, new_h, net_w, net_h, dx, dy)
         
-        # randomly distort hsv space
+        # randomly distort hsv space # 不改变bbox
         im_sized = random_distort_image(im_sized)
         
-        # randomly flip
+        # randomly flip # 改变bbox
         flip = np.random.randint(2)
         im_sized = random_flip(im_sized, flip)
             

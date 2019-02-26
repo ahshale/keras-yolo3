@@ -21,6 +21,7 @@ class YoloLayer(Layer):
         # make a persistent mesh grid
         max_grid_h, max_grid_w = max_grid
 
+        # 为batch中每一张图片创建空的矩阵cell_grid，用于存放不同cell的位置，一共三个预测尺度，每个尺度包含三个anchor
         cell_x = tf.to_float(tf.reshape(tf.tile(tf.range(max_grid_w), [max_grid_h]), (1, max_grid_h, max_grid_w, 1, 1)))
         cell_y = tf.transpose(cell_x, (0,2,1,3,4))
         self.cell_grid = tf.tile(tf.concat([cell_x,cell_y],-1), [batch_size, 1, 1, 3, 1])
@@ -43,6 +44,7 @@ class YoloLayer(Layer):
         batch_seen = tf.Variable(0.)        
 
         # compute grid factor and net factor
+        # 当开启jitter时，不同的net_shape导致不同的grid_shape
         grid_h      = tf.shape(y_true)[1]
         grid_w      = tf.shape(y_true)[2]
         grid_factor = tf.reshape(tf.cast([grid_w, grid_h], tf.float32), [1,1,1,1,2])
@@ -54,6 +56,7 @@ class YoloLayer(Layer):
         """
         Adjust prediction
         """
+        # 不去获得有目标cell的位置，直接在整个cell_grid上做回归，省去遍历有目标物cell位置的时间，当目标很多时，可以大大节省训练时间
         pred_box_xy    = (self.cell_grid[:,:grid_h,:grid_w,:,:] + tf.sigmoid(y_pred[..., :2]))  # sigma(t_xy) + c_xy
         pred_box_wh    = y_pred[..., 2:4]                                                       # t_wh
         pred_box_conf  = tf.expand_dims(tf.sigmoid(y_pred[..., 4]), 4)                          # adjust confidence
@@ -74,13 +77,16 @@ class YoloLayer(Layer):
         conf_delta  = pred_box_conf - 0 
 
         # then, ignore the boxes which have good overlap with some true box
+        # 将绝对值转换为相对值,∈(0, 1)
         true_xy = true_boxes[..., 0:2] / grid_factor
         true_wh = true_boxes[..., 2:4] / net_factor
         
+        # true_mins = [true_min_x, true_min_y]
         true_wh_half = true_wh / 2.
         true_mins    = true_xy - true_wh_half
         true_maxes   = true_xy + true_wh_half
         
+        # wh = anchors * exp(t_wh)
         pred_xy = tf.expand_dims(pred_box_xy / grid_factor, 4)
         pred_wh = tf.expand_dims(tf.exp(pred_box_wh) * self.anchors / net_factor, 4)
         
@@ -88,6 +94,7 @@ class YoloLayer(Layer):
         pred_mins    = pred_xy - pred_wh_half
         pred_maxes   = pred_xy + pred_wh_half    
 
+        # max_min_x, max_min_y = tf.maximum([pred_min_x, pred_min_y], [true_min_x, true_min_y])
         intersect_mins  = tf.maximum(pred_mins,  true_mins)
         intersect_maxes = tf.minimum(pred_maxes, true_maxes)
 
@@ -100,6 +107,7 @@ class YoloLayer(Layer):
         union_areas = pred_areas + true_areas - intersect_areas
         iou_scores  = tf.truediv(intersect_areas, union_areas)
 
+        # 将没有正确检测到物体的cell的conf置零，特别适用于置信度很高但是并没有检测到物体的情况
         best_ious   = tf.reduce_max(iou_scores, axis=4)        
         conf_delta *= tf.expand_dims(tf.to_float(best_ious < self.ignore_thresh), 4)
 
@@ -136,6 +144,7 @@ class YoloLayer(Layer):
         count_noobj = tf.reduce_sum(1 - object_mask)
         detect_mask = tf.to_float((pred_box_conf*object_mask) >= 0.5)
         class_mask  = tf.expand_dims(tf.to_float(tf.equal(tf.argmax(pred_box_class, -1), true_box_class)), 4)
+        # conf > 0.5 & iou_score > 0.5 & right class 算正确检测
         recall50    = tf.reduce_sum(tf.to_float(iou_scores >= 0.5 ) * detect_mask  * class_mask) / (count + 1e-3)
         recall75    = tf.reduce_sum(tf.to_float(iou_scores >= 0.75) * detect_mask  * class_mask) / (count + 1e-3)    
         avg_iou     = tf.reduce_sum(iou_scores) / (count + 1e-3)
