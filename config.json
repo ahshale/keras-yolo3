@@ -17,7 +17,7 @@
         "nb_epochs":            100,
         "warmup_epochs":        3,
         "ignore_thresh":        0.5,
-        "gpus":                 "0,1",
+        "gpus":                 "0",
 
         "grid_scales":          [1,1,1],
         "obj_scale":            5,
@@ -26,7 +26,7 @@
         "class_scale":          1,
 
         "tensorboard_dir":      "logs",
-        "saved_weights_name":   "RubbishDetector-1e-3lr.h5",
+        "saved_weights_name":   "RubbishDetector-1e-3lr-ud-flip.h5",
         "debug":                true
     },
 

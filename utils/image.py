@@ -11,11 +11,15 @@ def _constrain(min_v, max_v, value):
     if value > max_v: return max_v
     return value 
 
-def random_flip(image, flip):
+def random_lr_flip(image, flip):
     if flip == 1: return cv2.flip(image, 1)
     return image
 
-def correct_bounding_boxes(boxes, new_w, new_h, net_w, net_h, dx, dy, flip, image_w, image_h):
+def random_ud_flip(image, flip):
+    if flip == 1: return cv2.flip(image, 0)
+    return image
+
+def correct_bounding_boxes(boxes, new_w, new_h, net_w, net_h, dx, dy, lr_flip, ud_flip, image_w, image_h):
     boxes = copy.deepcopy(boxes)
 
     # randomize boxes' order
@@ -35,10 +39,14 @@ def correct_bounding_boxes(boxes, new_w, new_h, net_w, net_h, dx, dy, flip, imag
             zero_boxes += [i]
             continue
 
-        if flip == 1:
+        if lr_flip == 1:
             swap = boxes[i]['xmin'];
             boxes[i]['xmin'] = net_w - boxes[i]['xmax']
             boxes[i]['xmax'] = net_w - swap
+        if ud_flip == 1:
+            swap = boxes[i]['ymin'];
+            boxes[i]['ymin'] = net_h - boxes[i]['ymax']
+            boxes[i]['ymax'] = net_h - swap
 
     boxes = [boxes[i] for i in range(len(boxes)) if i not in zero_boxes]
 

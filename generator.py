@@ -3,7 +3,7 @@ import copy
 import numpy as np
 from keras.utils import Sequence
 from utils.bbox import BoundBox, bbox_iou
-from utils.image import apply_random_scale_and_crop, random_distort_image, random_flip, correct_bounding_boxes
+from utils.image import apply_random_scale_and_crop, random_distort_image, random_lr_flip, random_ud_flip, correct_bounding_boxes
 
 class BatchGenerator(Sequence):
     def __init__(self, 
@@ -195,11 +195,13 @@ class BatchGenerator(Sequence):
         im_sized = random_distort_image(im_sized)
         
         # randomly flip # 改变bbox
-        flip = np.random.randint(2)
-        im_sized = random_flip(im_sized, flip)
+        lr_flip = np.random.randint(2)
+        im_sized = random_lr_flip(im_sized, lr_flip)
+        ud_flip = np.random.randint(2)
+        im_sized = random_ud_flip(im_sized, ud_flip)
             
         # correct the size and pos of bounding boxes
-        all_objs = correct_bounding_boxes(instance['object'], new_w, new_h, net_w, net_h, dx, dy, flip, image_w, image_h)
+        all_objs = correct_bounding_boxes(instance['object'], new_w, new_h, net_w, net_h, dx, dy, lr_flip, ud_flip, image_w, image_h)
         
         return im_sized, all_objs   
 
