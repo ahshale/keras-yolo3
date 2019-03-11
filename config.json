@@ -1,14 +1,14 @@
 {
     "model" : {
-        "min_input_size":       352,
-        "max_input_size":       448,
+        "min_input_size":       416,
+        "max_input_size":       416,
         "anchors":              [18,37, 26,110, 39,61, 55,162, 59,96, 84,132, 101,229, 122,84, 166,188],
         "labels":               ["glass", "metal", "stone"]
     },
 
     "train": {
-        "train_image_folder":   "D:/xgll/dataset/resized_trainset/",
-        "train_annot_folder":   "D:/xgll/dataset/trainset_xml/",
+        "train_image_folder":   "D:/xgll/dataset/resized_trainset_416/",
+        "train_annot_folder":   "D:/xgll/dataset/trainset_xml_416/",
         "cache_name":           "trainset.pkl",
 
         "train_times":          8,
@@ -22,11 +22,11 @@
         "grid_scales":          [1,1,1],
         "obj_scale":            5,
         "noobj_scale":          1,
-        "xywh_scale":           1,
+        "xywh_scale":           5,
         "class_scale":          1,
 
         "tensorboard_dir":      "logs",
-        "saved_weights_name":   "RubbishDetector-1e-3lr-ud-flip.h5",
+        "saved_weights_name":   "RubbishDetector-1e-3lr-ud-flip-ms-off-5obj5coord.h5",
         "debug":                true
     },
 
